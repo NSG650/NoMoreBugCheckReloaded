@@ -1,0 +1,1 @@
+A simple UEFI bootkit made by [NSG650](https://github.com/NSG650) and me.
