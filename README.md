@@ -5,7 +5,8 @@ This time the kernel is patched on boot by an EFI driver instead of an Windows d
 
 # Warning
 Please do not use this on your main system. Even though I added code to let severe bsods pass through it is not guranteed that it would stop any hardware from getting damaged.
-Please try to resolve the BSOD instead of ignoring it.
+Like all issues in life one should try to resolve it instead of ignoring.
+Please try to resolve the BSOD instead of ignoring it by using this tool.
 
 # Usage
 Load the EFI driver before booting Windows. Either via the EFI shell or configuring firmware settings.
