@@ -9,7 +9,12 @@ EFI_EXIT_BOOT_SERVICES    gOriginalEBS;
 VOID* gKernelBase = NULL;
 VOID* WinloadReturnAddress = NULL;
 
-UINT32(*IoInitSystem)();
+VOID(*KeBugCheckEx)(UINT32 BugCheckCode,
+    UINT64 Code1,
+    UINT64 Code2,
+    UINT64 Code3,
+    UINT64 Code4
+);
 
 VOID EFIAPI NotifySetVirtualAddressMap(EFI_EVENT Event, VOID* Context)
 {
@@ -38,30 +43,11 @@ VOID EFIAPI NotifySetVirtualAddressMap(EFI_EVENT Event, VOID* Context)
     // Disable write protection
     UINT64 cr0 = AsmReadCr0();
     AsmWriteCr0(cr0 & ~0x10000ull);
-
-    /*
-        nt!IoInitSystem:
-        fffff804`7d64a6fc 4883ec28        sub     rsp,28h
-        fffff804`7d64a700 488d0541482000  lea     rax,[nt!IopInitFailCode (fffff804`7d84ef48)]
-        fffff804`7d64a707 4889442438      mov     qword ptr [rsp+38h],rax
-        fffff804`7d64a70c e83b88ffff      call    nt!IoInitSystemPreDrivers (fffff804`7d642f4c)
-        fffff804`7d64a711 84c0            test    al,al
-        fffff804`7d64a713 0f8425740300    je      nt!IoInitSystem+0x37442 (fffff804`7d681b3e)  Branch
-
-        nt!IoInitSystem+0x1d:
-        fffff804`7d64a719 4c8b1570ee6eff  mov     r10,qword ptr [nt!_imp_WerLiveKernelInitSystem (fffff804`7cd39590)]
-        fffff804`7d64a720 e8eb28a200      call    werkernel!WerLiveKernelInitSystemExt (fffff804`7e06d010)
-        fffff804`7d64a725 e822b50000      call    nt!IopInitializeSystemDrivers (fffff804`7d655c4c)
-        fffff804`7d64a72a 85c0            test    eax,eax
-        fffff804`7d64a72c 0f8413740300    je      nt!IoInitSystem+0x37449 (fffff804`7d681b45)
-    */
-
-    UINT8 IoInitSysSig[] = { 0x48, 0x83, 0xEC, 0x28, 0x48, 0x8D, 0x05, 0x00, 0x00, 0x00, 0x00, 0x48, 0x89, 0x44, 0x24, 0x38, 0xE8, 0x00, 0x00, 0x00, 0x00, 0x84, 0xC0, 0x0F, 0x84 }; // Start of IoInitSystem in ntoskrnl.exe
-    UINT8 IoInitSysMsk[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF, 0xFF, 0xFF, 0x00, 0x00, 0x00, 0x00 };
-    UINT8* IoInitSysScanBase = (UINT8*)FindPattern(gKernelBase, 0x1000000, IoInitSysSig, sizeof(IoInitSysSig), IoInitSysMsk) + 0x29;
-
-    IoInitSystem = (UINT32(*)(UINT64, UINT64, UINT64, UINT64))(IoInitSysScanBase);
-    SetupIoInitSystemHook((UINT8*)IoInitSystem, (VOID*)IoInitSystemHook);
+#pragma warning (push)
+#pragma warning (disable : 4152)
+    KeBugCheckEx = FindExport(gKernelBase, "KeBugCheckEx");
+#pragma warning (pop)
+    SetupKeBugCheckExHook(KeBugCheckEx, KeBugCheckExHook);
 
     AsmWriteCr0(cr0);
     return;

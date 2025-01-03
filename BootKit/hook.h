@@ -1,9 +1,14 @@
 #include "util.h"
 #include "nt.h"
 
-extern BYTE IoInitSystem_Original[25];
-extern UINT32(*IoInitSystem)();
+extern BYTE KeBugCheckExOriginalBytes[13];
+extern VOID(*KeBugCheckEx)(UINT32 BugCheckCode,
+    UINT64 Code1,
+    UINT64 Code2,
+    UINT64 Code3,
+    UINT64 Code4
+);
 extern VOID* gKernelBase;
 
-VOID SetupIoInitSystemHook(UINT8* _ioInitSystem, VOID* HookFunc);
-VOID IoInitSystemHook();
+VOID SetupKeBugCheckExHook(UINT8* KeBugCheckExPtr, VOID* HookFunc);
+VOID KeBugCheckExHook(UINT32 BugCheckCode, UINT64 Code1, UINT64 Code2, UINT64 Code3, UINT64 Code4);
